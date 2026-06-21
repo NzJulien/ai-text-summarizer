@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>📝 AI Text Summarizer</title>
+<style>
+  :root{
+    --bg:#08090f;--s1:#0e0f1c;--s2:#121325;--s3:#161729;
+    --border:#1d1e38;--accent:#f59e0b;--a2:#fbbf24;--a3:#fde68a;
+    --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
+    --text:#e2e8f0;--muted:#64748b;--r:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+  ::-webkit-scrollbar{width:5px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+  header{
+    background:linear-gradient(135deg,#0a0b16,#0e0f20);
+    border-bottom:1px solid var(--border);
+    padding:18px 28px;display:flex;align-items:center;gap:12px;
+  }
+  .logo{
+    width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(135deg,var(--accent),var(--purple));
+    display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+    box-shadow:0 0 18px rgba(245,158,11,0.35);flex-shrink:0;
+  }
+  header h1{font-size:1.05rem;font-weight:700;}
+  header p{font-size:0.7rem;color:var(--muted);margin-top:2px;}
+  .hbadge{
+    margin-left:auto;background:rgba(245,158,11,0.12);
+    border:1px solid rgba(245,158,11,0.3);border-radius:20px;
+    padding:4px 12px;font-size:0.7rem;color:var(--a2);font-weight:600;
+  }
+
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px;}
+
+  /* Key */
+  #key-bar{
+    background:var(--s2);border:1px solid rgba(245,158,11,0.25);
+    border-radius:var(--r);padding:14px 18px;display:flex;
+    align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;
+  }
+  #key-bar label{font-size:0.74rem;color:var(--a2);font-weight:600;white-space:nowrap;}
+  #api-k{
+    flex:1;min-width:200px;background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);border-radius:9px;padding:8px 13px;
+    color:var(--text);font-family:monospace;font-size:0.78rem;outline:none;
+    transition:border-color .2s;
+  }
+  #api-k:focus{border-color:var(--accent);}
+  .btn{
+    background:linear-gradient(135deg,var(--accent),var(--purple));
+    border:none;border-radius:9px;padding:9px 20px;color:#0a0a12;
+    font-size:0.8rem;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;
+    white-space:nowrap;
+  }
+  .btn:hover{opacity:.85;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.3;cursor:not-allowed;}
+  .btn.ghost{background:var(--s3);border:1px solid var(--border);color:var(--muted);}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--a2);}
+  .btn.sm{padding:6px 14px;font-size:0.72rem;}
+  #key-ok{font-size:0.7rem;color:var(--green);display:none;white-space:nowrap;}
+
+  /* Input panel */
+  .panel{
+    background:var(--s2);border:1px solid var(--border);
+    border-radius:var(--r);padding:22px;margin-bottom:22px;
+  }
+  .panel h2{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;}
+
+  .tab-row{display:flex;gap:8px;margin-bottom:16px;}
+  .tab{
+    background:var(--s3);border:1px solid var(--border);border-radius:8px;
+    padding:7px 16px;font-size:0.78rem;color:var(--muted);cursor:pointer;
+    transition:all .2s;
+  }
+  .tab.active{border-color:var(--accent);color:var(--a2);background:rgba(245,158,11,0.1);}
+
+  textarea{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:10px;padding:14px;color:var(--text);font-family:inherit;
+    font-size:0.85rem;line-height:1.65;outline:none;resize:vertical;min-height:180px;
+    transition:border-color .2s;
+  }
+  textarea:focus{border-color:var(--accent);}
+
+  #url-input{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:10px;padding:12px 14px;color:var(--text);font-size:0.85rem;
+    outline:none;transition:border-color .2s;
+  }
+  #url-input:focus{border-color:var(--accent);}
+  .url-note{font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.5;}
+
+  .opt-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;}
+  @media(max-width:680px){.opt-row{grid-template-columns:1fr;}}
+  .opt-row label{font-size:0.7rem;color:var(--muted);display:block;margin-bottom:6px;}
+  select{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:9px;padding:9px 12px;color:var(--text);font-size:0.82rem;outline:none;
+    transition:border-color .2s;
+  }
+  select:focus{border-color:var(--accent);}
+  select option{background:#1a1b2e;}
+
+  .gen-row{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  #char-info{font-size:0.7rem;color:var(--muted);margin-left:auto;}
+
+  /* Loading */
+  #loading{display:none;text-align:center;padding:50px 20px;background:var(--s2);
+    border:1px solid var(--border);border-radius:var(--r);margin-bottom:22px;}
+  .spin{width:46px;height:46px;border:3px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 16px;}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #load-msg{font-size:0.78rem;color:var(--muted);}
+
+  /* Results */
+  #results{display:none;}
+  .res-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .res-header h2{font-size:1rem;font-weight:700;}
+  .gbadge{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);
+    border-radius:20px;padding:3px 10px;font-size:0.7rem;color:var(--green);}
+  .stat-pills{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
+  .pill{background:var(--s3);border:1px solid var(--border);border-radius:20px;
+    padding:4px 12px;font-size:0.7rem;color:var(--muted);}
+  .pill b{color:var(--a2);}
+
+  .summary-card{
+    background:linear-gradient(135deg,#1a1408,#14132a);
+    border:1px solid rgba(245,158,11,0.3);border-radius:var(--r);
+    padding:22px;margin-bottom:20px;font-size:0.92rem;line-height:1.75;color:#fef3c7;
+  }
+
+  /* Key points */
+  .points-card{
+    background:var(--s2);border:1px solid var(--border);border-radius:var(--r);
+    padding:20px;margin-bottom:20px;
+  }
+  .points-card h3{font-size:0.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;}
+  .point{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.84rem;line-height:1.55;}
+  .point:last-child{border-bottom:none;}
+  .point-num{
+    width:22px;height:22px;border-radius:50%;background:rgba(245,158,11,0.15);
+    border:1px solid rgba(245,158,11,0.3);color:var(--a2);font-size:0.7rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+  }
+
+  /* Topics tags */
+  .topics-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .topic-tag{
+    background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);
+    border-radius:20px;padding:4px 12px;font-size:0.72rem;color:#d8b4fe;
+  }
+
+  /* Sentiment */
+  .sent-row{display:flex;align-items:center;gap:10px;margin-top:6px;}
+  .sent-badge{
+    padding:4px 14px;border-radius:20px;font-size:0.74rem;font-weight:700;
+  }
+  .sent-positive{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.35);}
+  .sent-negative{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.35);}
+  .sent-neutral{background:rgba(100,116,139,0.15);color:var(--muted);border:1px solid rgba(100,116,139,0.35);}
+  .sent-mixed{background:rgba(245,158,11,0.15);color:var(--a2);border:1px solid rgba(245,158,11,0.35);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+  @media(max-width:680px){.grid-2{grid-template-columns:1fr;}}
+  .info-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+  .info-card h3{font-size:0.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+
+  /* Error */
+  #err-box{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+    border-radius:var(--r);padding:14px;font-size:0.8rem;color:#fca5a5;margin-bottom:18px;}
+
+  .export-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📝</div>
+  <div>
+    <h1>AI Text Summarizer</h1>
+    <p>Paste any text → get key points, themes & sentiment instantly</p>
+  </div>
+  <div class="hbadge">Claude AI</div>
+</header>
+
+<div class="wrap">
+
+  <div id="key-bar">
+    <label>🔑 API KEY</label>
+    <input type="password" id="api-k" placeholder="sk-ant-api03-..."/>
+    <button class="btn sm" onclick="saveKey()">Connect</button>
+    <span id="key-ok">✓ Connected</span>
+  </div>
+
+  <div id="err-box"></div>
+
+  <div class="panel">
+    <h2>📄 Your Text</h2>
+    <textarea id="text-input" placeholder="Paste an article, report, email, transcript, or any long text here..."></textarea>
+
+    <div class="opt-row">
+      <div>
+        <label>Summary length</label>
+        <select id="length">
+          <option value="very short (1-2 sentences)">⚡ Very short</option>
+          <option value="short (1 paragraph)" selected>📄 Short</option>
+          <option value="medium (2-3 paragraphs)">📑 Medium</option>
+          <option value="detailed (comprehensive)">📚 Detailed</option>
+        </select>
+      </div>
+      <div>
+        <label>Style</label>
+        <select id="style">
+          <option value="TL;DR casual">💬 TL;DR</option>
+          <option value="executive summary" selected>💼 Executive</option>
+          <option value="academic">🎓 Academic</option>
+          <option value="bullet-point only">• Bullet only</option>
+          <option value="explain like I'm 5">🧒 Simple (ELI5)</option>
+        </select>
+      </div>
+      <div>
+        <label>Output language</label>
+        <select id="lang">
+          <option value="English" selected>🇬🇧 English</option>
+          <option value="French">🇫🇷 French</option>
+          <option value="Spanish">🇪🇸 Spanish</option>
+          <option value="German">🇩🇪 German</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="gen-row">
+      <button class="btn" id="sum-btn" onclick="summarize()">✨ Summarize</button>
+      <button class="btn ghost sm" onclick="loadSample()">Load sample</button>
+      <span id="char-info">0 chars</span>
+    </div>
+  </div>
+
+  <div id="loading">
+    <div class="spin"></div>
+    <div id="load-msg">Reading and analyzing your text...</div>
+  </div>
+
+  <div id="results">
+    <div class="res-header">
+      <h2>✨ Summary</h2>
+      <span class="gbadge">✓ Done</span>
+      <div class="stat-pills" id="stat-pills"></div>
+    </div>
+
+    <div class="summary-card" id="summary-text"></div>
+
+    <div class="points-card">
+      <h3>🎯 Key Points</h3>
+      <div id="points-list"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="info-card">
+        <h3>🏷 Topics</h3>
+        <div class="topics-row" id="topics-row"></div>
+      </div>
+      <div class="info-card">
+        <h3>💭 Sentiment / Tone</h3>
+        <div class="sent-row" id="sent-row"></div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-top:10px;line-height:1.55" id="sent-note"></p>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="btn sm" onclick="copySummary()">📋 Copy Summary</button>
+      <button class="btn ghost sm" onclick="exportTXT()">⬇ Export .txt</button>
+      <button class="btn ghost sm" onclick="resetAll()" style="margin-left:auto">↩ New Text</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let apiKey = localStorage.getItem('sum_ant_key') || '';
+  let lastResult = null;
+
+  if (apiKey) {
+    document.getElementById('api-k').value = apiKey;
+    document.getElementById('key-ok').style.display = 'inline';
+  }
+
+  document.getElementById('text-input').addEventListener('input', e => {
+    const n = e.target.value.length;
+    const words = e.target.value.trim().split(/\s+/).filter(Boolean).length;
+    document.getElementById('char-info').textContent = `${n.toLocaleString()} chars · ${words.toLocaleString()} words`;
+  });
+
+  function saveKey() {
+    const v = document.getElementById('api-k').value.trim();
+    if (!v.startsWith('sk-ant')) { showErr('Must start with sk-ant...'); return; }
+    apiKey = v;
+    localStorage.setItem('sum_ant_key', apiKey);
+    document.getElementById('key-ok').style.display = 'inline';
+  }
+
+  function showErr(msg) {
+    const b = document.getElementById('err-box');
+    b.textContent = '⚠️ ' + msg;
+    b.style.display = 'block';
+    setTimeout(() => b.style.display = 'none', 6000);
+  }
+
+  async function summarize() {
+    if (!apiKey) { showErr('Enter your API key first.'); return; }
+    const text = document.getElementById('text-input').value.trim();
+    if (!text) { showErr('Paste some text first.'); return; }
+
+    const length = document.getElementById('length').value;
+    const style  = document.getElementById('style').value;
+    const lang   = document.getElementById('lang').value;
+
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('err-box').style.display = 'none';
+    document.getElementById('sum-btn').disabled = true;
+
+    const msgs = ['Reading the text...','Identifying key ideas...','Detecting tone...','Writing summary...','Finishing up...'];
+    let mi = 0;
+    const lt = setInterval(() => { if (mi < msgs.length) document.getElementById('load-msg').textContent = msgs[mi++]; }, 700);
+
+    const prompt = `Summarize the following text. Length: ${length}. Style: ${style}. Output language: ${lang}.
+
+Return ONLY a JSON object, no markdown:
+{
+  "summary": "the summary text itself, written in the requested style and length",
+  "key_points": ["point 1", "point 2", "point 3"],
+  "topics": ["topic1", "topic2"],
+  "sentiment": "positive|negative|neutral|mixed",
+  "sentiment_note": "one sentence explaining the tone/sentiment",
+  "word_count_original": 0,
+  "word_count_summary": 0
+}
+
+Text to summarize:
+${text}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-calls':'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          messages: [{ role:'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'API error');
+
+      clearInterval(lt);
+      const raw = data.content?.[0]?.text || '{}';
+      const clean = raw.replace(/```json|```/g,'').trim();
+      lastResult = JSON.parse(clean);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('sum-btn').disabled = false;
+      renderResult(lastResult);
+
+    } catch(e) {
+      clearInterval(lt);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('sum-btn').disabled = false;
+      showErr(e.message);
+    }
+  }
+
+  function renderResult(d) {
+    document.getElementById('summary-text').textContent = d.summary || '';
+
+    document.getElementById('points-list').innerHTML = (d.key_points||[]).map((p,i) => `
+      <div class="point">
+        <div class="point-num">${i+1}</div>
+        <div>${escHtml(p)}</div>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:0.8rem">No key points extracted</div>';
+
+    document.getElementById('topics-row').innerHTML = (d.topics||[]).map(t =>
+      `<span class="topic-tag">${escHtml(t)}</span>`).join('') || '<span style="color:var(--muted);font-size:0.8rem">No topics detected</span>';
+
+    const sentClass = 'sent-' + (d.sentiment || 'neutral');
+    document.getElementById('sent-row').innerHTML = `<span class="sent-badge ${sentClass}">${(d.sentiment||'neutral').toUpperCase()}</span>`;
+    document.getElementById('sent-note').textContent = d.sentiment_note || '';
+
+    const orig = d.word_count_original || 0;
+    const summ = d.word_count_summary || 0;
+    const reduction = orig ? Math.round((1 - summ/orig) * 100) : 0;
+    document.getElementById('stat-pills').innerHTML = `
+      <span class="pill">Original: <b>${orig}</b> words</span>
+      <span class="pill">Summary: <b>${summ}</b> words</span>
+      <span class="pill">Reduced by <b>${reduction}%</b></span>
+    `;
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({behavior:'smooth'});
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function copySummary() {
+    if (!lastResult) return;
+    navigator.clipboard.writeText(lastResult.summary).then(() => alert('Summary copied!'));
+  }
+
+  function exportTXT() {
+    if (!lastResult) return;
+    const text = [
+      'SUMMARY', '=======', lastResult.summary, '',
+      'KEY POINTS', '==========',
+      ...(lastResult.key_points||[]).map((p,i) => `${i+1}. ${p}`), '',
+      'TOPICS: ' + (lastResult.topics||[]).join(', '), '',
+      'SENTIMENT: ' + lastResult.sentiment, lastResult.sentiment_note
+    ].join('\n');
+    const blob = new Blob([text], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'summary.txt';
+    a.click();
+  }
+
+  function resetAll() {
+    lastResult = null;
+    document.getElementById('text-input').value = '';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('char-info').textContent = '0 chars';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function loadSample() {
+    document.getElementById('text-input').value = `The rapid advancement of artificial intelligence has transformed numerous industries over the past decade. Machine learning models, particularly large language models, have demonstrated remarkable capabilities in natural language understanding, generation, and reasoning. Companies across sectors from healthcare to finance are integrating AI tools to streamline operations, improve decision-making, and enhance customer experiences.
+
+However, this rapid adoption has also raised important questions about safety, fairness, and the societal impact of these technologies. Researchers and policymakers are working together to establish frameworks that ensure AI systems are developed and deployed responsibly. Key concerns include algorithmic bias, data privacy, job displacement, and the need for transparency in how AI systems make decisions.
+
+Despite these challenges, the potential benefits remain significant. AI-powered tools are accelerating scientific research, helping diagnose diseases earlier, optimizing energy consumption, and making education more accessible through personalized learning. As the technology continues to mature, the focus is shifting toward building systems that are not only powerful but also trustworthy, interpretable, and aligned with human values.`;
+    document.getElementById('text-input').dispatchEvent(new Event('input'));
+  }
+</script>
+</body>
+</html>
